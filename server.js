@@ -11,7 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 8787
 const isProduction = process.env.NODE_ENV === 'production'
 const app = express()
-const parser = new Parser({ timeout: 10000 })
+const parser = new Parser({ timeout: 25000 })
 
 app.use(cors())
 
@@ -156,11 +156,10 @@ app.get('/api/discover-feed', async (req, res) => {
   const pathCandidates = COMMON_FEED_PATHS.map((p) => new URL(p, safeUrl).toString())
   const toCheck = linkCandidates.size > 0 ? [...linkCandidates] : pathCandidates
 
-  const found = []
+  const results = await Promise.all(toCheck.slice(0, 8).map((candidate) => tryParseFeed(candidate)))
   const seen = new Set()
-  for (const candidate of toCheck) {
-    if (found.length >= 5) break
-    const result = await tryParseFeed(candidate)
+  const found = []
+  for (const result of results) {
     if (result && !seen.has(result.url)) {
       seen.add(result.url)
       found.push(result)
