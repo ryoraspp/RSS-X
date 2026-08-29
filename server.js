@@ -15,6 +15,14 @@ const parser = new Parser({ timeout: 25000 })
 
 app.use(cors())
 
+app.use((req, res, next) => {
+  const start = Date.now()
+  res.on('finish', () => {
+    console.log(`[req] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${Date.now() - start}ms)`)
+  })
+  next()
+})
+
 function isPrivateIp(ip) {
   if (net.isIPv4(ip)) {
     const [a, b] = ip.split('.').map(Number)
@@ -79,6 +87,7 @@ app.get('/api/feed', async (req, res) => {
       }))
     })
   } catch (err) {
+    console.error(`[/api/feed] url=${url} error=`, err)
     res.status(502).json({ error: err.message || 'フィードの取得に失敗しました' })
   }
 })
