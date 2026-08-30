@@ -30,7 +30,7 @@ export function useArticles(feeds) {
           return (data.items || []).map((item) => ({
             ...item,
             feedId: feed.id,
-            feedTitle: data.feedTitle || feed.url,
+            feedTitle: data.feedTitle || feed.title || feed.url,
             key: item.guid || item.link || `${feed.id}-${item.title}`
           }))
         } catch (err) {

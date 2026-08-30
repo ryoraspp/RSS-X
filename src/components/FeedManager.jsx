@@ -27,7 +27,7 @@ export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) 
     try {
       const found = await discoverFeed(trimmed)
       if (found.length === 1) {
-        addFeed(found[0].url)
+        addFeed(found[0].url, found[0].title)
         setUrl('')
         setStatus('idle')
       } else {
@@ -40,8 +40,8 @@ export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) 
     }
   }
 
-  function handleChoose(feedUrl) {
-    addFeed(feedUrl)
+  function handleChoose(feedUrl, feedTitle) {
+    addFeed(feedUrl, feedTitle)
     setUrl('')
     setCandidates([])
     setStatus('idle')
@@ -70,7 +70,7 @@ export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) 
           <ul>
             {candidates.map((c) => (
               <li key={c.url}>
-                <button type="button" onClick={() => handleChoose(c.url)}>
+                <button type="button" onClick={() => handleChoose(c.url, c.title)}>
                   {c.title}
                 </button>
                 <span className="feed-candidate-url">{c.url}</span>
@@ -83,8 +83,11 @@ export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) 
       <ul className="feed-list">
         {feeds.map((feed) => (
           <li key={feed.id} className="feed-item">
-            <span className="feed-url" title={feed.url}>
-              {feed.url}
+            <span className="feed-info">
+              <span className="feed-title">{feed.title || feed.url}</span>
+              <span className="feed-url" title={feed.url}>
+                {feed.url}
+              </span>
             </span>
             {feedErrors[feed.id] && (
               <span className="feed-error" title={feedErrors[feed.id]}>
