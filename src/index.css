@@ -113,56 +113,6 @@ button:disabled {
   margin: 10px 0 0;
 }
 
-.feed-candidates {
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.feed-candidates-title {
-  margin: 0 0 8px;
-  font-size: 0.82rem;
-  color: var(--text-dim);
-}
-
-.feed-candidates ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.feed-candidates li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.feed-candidates button {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.feed-candidates button:hover {
-  background: var(--accent-hover);
-}
-
-.feed-candidate-url {
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .feed-list {
   list-style: none;
   margin: 12px 0 0;

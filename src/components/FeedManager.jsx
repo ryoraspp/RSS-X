@@ -6,13 +6,12 @@ async function discoverFeed(url) {
   if (!res.ok) {
     throw new Error(body.error || 'フィードの検出に失敗しました')
   }
-  return body.candidates || []
+  return body.candidates?.[0] || null
 }
 
 export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) {
   const [url, setUrl] = useState('')
-  const [status, setStatus] = useState('idle') // idle | loading | choosing | error
-  const [candidates, setCandidates] = useState([])
+  const [status, setStatus] = useState('idle') // idle | loading | error
   const [error, setError] = useState('')
 
   async function handleSubmit(e) {
@@ -22,29 +21,17 @@ export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) 
 
     setStatus('loading')
     setError('')
-    setCandidates([])
 
     try {
       const found = await discoverFeed(trimmed)
-      if (found.length === 1) {
-        addFeed(found[0].url, found[0].title)
-        setUrl('')
-        setStatus('idle')
-      } else {
-        setCandidates(found)
-        setStatus('choosing')
-      }
+      if (!found) throw new Error('RSSフィードが見つかりませんでした')
+      addFeed(found.url, found.title)
+      setUrl('')
+      setStatus('idle')
     } catch (err) {
       setError(err.message)
       setStatus('error')
     }
-  }
-
-  function handleChoose(feedUrl, feedTitle) {
-    addFeed(feedUrl, feedTitle)
-    setUrl('')
-    setCandidates([])
-    setStatus('idle')
   }
 
   return (
@@ -53,32 +40,16 @@ export default function FeedManager({ feeds, addFeed, removeFeed, feedErrors }) 
         <input
           type="url"
           required
-          placeholder="サイトのURLまたはRSSフィードのURLを入力"
+          placeholder="RSSフィードのURLを入力"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
         <button type="submit" disabled={status === 'loading'}>
-          {status === 'loading' ? '検出中…' : '追加'}
+          {status === 'loading' ? '確認中…' : '追加'}
         </button>
       </form>
 
       {status === 'error' && <p className="feed-discover-error">⚠ {error}</p>}
-
-      {status === 'choosing' && (
-        <div className="feed-candidates">
-          <p className="feed-candidates-title">複数のフィードが見つかりました。追加するものを選んでください:</p>
-          <ul>
-            {candidates.map((c) => (
-              <li key={c.url}>
-                <button type="button" onClick={() => handleChoose(c.url, c.title)}>
-                  {c.title}
-                </button>
-                <span className="feed-candidate-url">{c.url}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <ul className="feed-list">
         {feeds.map((feed) => (

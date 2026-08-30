@@ -1,7 +1,6 @@
 import express from 'express'
 import cors from 'cors'
 import Parser from 'rss-parser'
-import * as cheerio from 'cheerio'
 import dns from 'node:dns/promises'
 import net from 'node:net'
 import path from 'node:path'
@@ -97,29 +96,6 @@ app.get('/api/feed', async (req, res) => {
   }
 })
 
-const COMMON_FEED_PATHS = [
-  '/feed',
-  '/feed/',
-  '/rss',
-  '/rss/',
-  '/rss.xml',
-  '/atom.xml',
-  '/index.xml',
-  '/feed.xml',
-  '/feeds/posts/default'
-]
-
-async function tryParseFeed(candidateUrl) {
-  try {
-    const safe = await assertSafeUrl(candidateUrl)
-    const feed = await parser.parseURL(safe.toString())
-    if (!feed.items) return null
-    return { url: safe.toString(), title: feed.title || safe.hostname }
-  } catch {
-    return null
-  }
-}
-
 app.get('/api/discover-feed', async (req, res) => {
   const { url } = req.query
   if (!url || typeof url !== 'string') {
@@ -133,58 +109,13 @@ app.get('/api/discover-feed', async (req, res) => {
     return res.status(400).json({ error: err.message })
   }
 
-  // 入力自体が既にフィードURLの場合はそのまま採用
-  const direct = await tryParseFeed(safeUrl.toString())
-  if (direct) {
-    return res.json({ candidates: [direct] })
-  }
-
-  let html
   try {
-    const response = await fetch(safeUrl.toString(), {
-      headers: { 'User-Agent': 'RSS-X-FeedDiscovery/1.0' },
-      signal: AbortSignal.timeout(10000)
-    })
-    if (!response.ok) {
-      throw new Error(`ページの取得に失敗しました (${response.status})`)
-    }
-    html = await response.text()
-  } catch (err) {
-    return res.status(502).json({ error: err.message || 'ページの取得に失敗しました' })
+    const feed = await parser.parseURL(safeUrl.toString())
+    if (!feed.items) throw new Error()
+    res.json({ candidates: [{ url: safeUrl.toString(), title: feed.title || safeUrl.hostname }] })
+  } catch {
+    res.status(404).json({ error: 'RSS/Atomフィードとして読み込めませんでした。フィードのURLを直接指定してください' })
   }
-
-  const $ = cheerio.load(html)
-  const linkCandidates = new Set()
-  $('link[rel="alternate"]').each((_, el) => {
-    const type = $(el).attr('type') || ''
-    const href = $(el).attr('href')
-    if (href && /rss|atom|xml/i.test(type)) {
-      try {
-        linkCandidates.add(new URL(href, safeUrl).toString())
-      } catch {
-        // 不正なhrefは無視
-      }
-    }
-  })
-
-  const pathCandidates = COMMON_FEED_PATHS.map((p) => new URL(p, safeUrl).toString())
-  const toCheck = linkCandidates.size > 0 ? [...linkCandidates] : pathCandidates
-
-  const results = await Promise.all(toCheck.slice(0, 8).map((candidate) => tryParseFeed(candidate)))
-  const seen = new Set()
-  const found = []
-  for (const result of results) {
-    if (result && !seen.has(result.url)) {
-      seen.add(result.url)
-      found.push(result)
-    }
-  }
-
-  if (found.length === 0) {
-    return res.status(404).json({ error: 'RSS/Atomフィードが見つかりませんでした' })
-  }
-
-  res.json({ candidates: found })
 })
 
 app.get('/api/health', (req, res) => res.json({ ok: true }))
